@@ -1,186 +1,3 @@
-# from playwright.sync_api import sync_playwright
-# import pandas as pd
-# import time
-# import os
-# from main import restaurant, login, get_current_item_data
-
-
-# def edit_items_from_excel(file_path, max_extra_notes=3):
-#     ITEM_LIST_URL = f"https://{restaurant}.foodiee.com.my/itemmanage/item_food"
-
-#     # -----------------------------
-#     # READ EXCEL
-#     # -----------------------------
-#     df = pd.read_csv(file_path) if file_path.endswith(".csv") else pd.read_excel(file_path)
-
-#     required_cols = {
-#         "food", "price", "category", "kitchen",
-#         "sessions", "extra notes", "max extra notes limit"
-#     }
-
-#     if not required_cols.issubset(df.columns):
-#         print("❌ Excel missing required columns")
-#         return
-
-#     # -----------------------------
-#     # HELPER: SEARCH + OPEN ITEM
-#     # -----------------------------
-#     def search_and_open(page, food_name):
-#         page.goto(ITEM_LIST_URL, timeout=60000)
-
-#         search_box = page.locator("#DataTables_Table_0_filter input[type='search']")
-#         search_box.wait_for(state="visible", timeout=10000)
-
-#         search_box.fill("")
-#         search_box.fill(food_name)
-#         time.sleep(1)
-
-#         rows = page.locator("tbody tr")
-#         if rows.count() == 0:
-#             print(f"❌ Item not found: {food_name}")
-#             return False
-
-#         rows.first.locator("a").first.click()
-#         page.wait_for_selector("input[name='foodname']", timeout=60000)
-#         return True
-
-#     # -----------------------------
-#     # PLAYWRIGHT
-#     # -----------------------------
-#     with sync_playwright() as p:
-#         browser = p.chromium.launch(headless=False, slow_mo=80)
-#         context = browser.new_context()
-#         page = context.new_page()
-
-#         login(page, email="admin@gmail.com", password="FooDiee#25!")
-
-#         for _, row in df.iterrows():
-#             food = str(row["food"]).strip()
-#             print(f"\n✏️ Editing: {food}")
-
-#             if not search_and_open(page, food):
-#                 continue
-
-#             # -----------------------------
-#             # CLEAN EXCEL VALUES
-#             # -----------------------------
-#             def clean(val):
-#                 return "" if pd.isna(val) else str(val).strip()
-
-#             price = clean(row["price"])
-#             category = clean(row["category"])
-#             kitchen = clean(row["kitchen"])
-#             sessions = clean(row["sessions"])
-#             extra_notes_raw = clean(row["extra notes"])
-#             image_name = str(row.get("img", "")).strip()
-
-#             max_limit = row.get("max extra notes limit")
-#             max_limit = max_extra_notes if pd.isna(max_limit) else int(max_limit)
-
-#             # -----------------------------
-#             # CURRENT DATA
-#             # -----------------------------
-#             current = get_current_item_data(page)
-
-#             def same(field, excel_val):
-#                 return excel_val and str(current.get(field)) == excel_val
-
-#             # -----------------------------
-#             # CATEGORY
-#             # -----------------------------
-#             if category and not same("category", category):
-#                 page.click("select[name='CategoryID'] + span.select2")
-#                 page.locator(".select2-results__option", has_text=category).first.click()
-
-#             # -----------------------------
-#             # KITCHEN
-#             # -----------------------------
-#             if kitchen and not same("kitchen", kitchen):
-#                 page.click("select[name='kitchen'] + span.select2")
-#                 page.locator(".select2-results__option", has_text=kitchen).first.click()
-
-#             # -----------------------------
-#             # PRICE
-#             # -----------------------------
-#             if price and not same("price", price):
-#                 page.fill("input[name='foodprice']", price)
-
-#             # -----------------------------
-#             # FOOD SESSIONS
-#             # -----------------------------
-#             if sessions:
-#                 for s in sessions.split(","):
-#                     s = s.strip()
-#                     if not s:
-#                         continue
-
-#                     page.click("select[name='food_sessions[]'] + span.select2")
-#                     search = page.locator(".select2-container--open input.select2-search__field")
-#                     search.fill(s)
-
-#                     page.wait_for_selector(".select2-results__option", timeout=5000)
-#                     page.locator(".select2-results__option", has_text=s).first.click()
-#                     time.sleep(0.2)
-
-#                 page.keyboard.press("Escape")
-
-#             # -----------------------------
-#             # EXTRA NOTES
-#             # -----------------------------
-#             if extra_notes_raw:
-#                 page.fill("input[name='extra_notes_limit']", str(max_limit))
-
-#                 notes = [
-#                     n.strip()
-#                     for n in extra_notes_raw.split(",")
-#                     if n.strip().lower() != "nan"
-#                 ][:max_limit]
-
-#                 for note in notes:
-#                     page.click("#extra_notes + span.select2")
-#                     search = page.locator(".select2-container--open input.select2-search__field")
-#                     search.fill(note)
-
-#                     page.wait_for_selector(".select2-results__option", timeout=5000)
-#                     page.locator(".select2-results__option", has_text=note).first.click()
-#                     time.sleep(0.2)
-
-#                 page.keyboard.press("Escape")
-
-#             # -----------------------------
-#             # IMAGE UPLOAD (CORRECT WAY)
-#             # -----------------------------
-#             if image_name:
-#                 foods = r"C:\Users\User\Videos\foodimages\Foods"
-#                 beverages = r"C:\Users\User\Videos\foodimages\Beverages"
-
-#                 img_path = os.path.join(foods, image_name)
-#                 if not os.path.exists(img_path):
-#                     img_path = os.path.join(beverages, image_name)
-
-#                 if os.path.exists(img_path):
-#                     page.set_input_files("input[name='picture']", img_path)
-#                     time.sleep(1)
-#                 else:
-#                     print(f"⚠️ Image not found: {image_name}")
-            
-
-#             # -----------------------------
-#             # STATUS
-#             # -----------------------------
-#             page.select_option("select[name='status']", "1")
-
-#             # -----------------------------
-#             # SAVE
-#             # -----------------------------
-#             page.click("button[type='submit']")
-#             print("✅ Updated")
-#             time.sleep(2)
-
-#         print("\n🎉 All items processed")
-#         input("Press Enter to close...")
-#         browser.close()
-
 from playwright.sync_api import sync_playwright
 import pandas as pd
 import time
@@ -193,13 +10,24 @@ def edit_items_from_excel(file_path, max_extra_notes=3):
     ITEM_LIST_URL = f"https://{config.restaurant}.foodiee.com.my/itemmanage/item_food"
 
     # -----------------------------
-    # READ EXCEL / CSV
+    # READ EXCEL (sheet = edit)
     # -----------------------------
-    df = pd.read_csv(file_path) if file_path.endswith(".csv") else pd.read_excel(file_path)
+    try:
+        df = pd.read_excel(file_path, sheet_name="edit")
+    except ValueError:
+        print("❌ Sheet 'edit' not found")
+        return
 
     required_cols = {
-        "food", "price", "category", "kitchen",
-        "sessions", "extra notes", "max extra notes limit"
+        "ref_food_name",
+        "food",
+        "tamil",
+        "price",
+        "category",
+        "kitchen",
+        "sessions",
+        "extra_notes",
+        "max_extra_notes_limit"
     }
 
     if not required_cols.issubset(df.columns):
@@ -239,35 +67,54 @@ def edit_items_from_excel(file_path, max_extra_notes=3):
         login(page, email="admin@gmail.com", password="FooDiee#25!")
 
         for _, row in df.iterrows():
-            food = str(row["food"]).strip()
-            print(f"\n✏️ Editing: {food}")
 
-            if not search_and_open(page, food):
+            ref_food = str(row["ref_food_name"]).strip()
+            new_food = str(row["food"]).strip()
+
+            print(f"\n✏️ Editing: {ref_food} → {new_food}")
+
+            if not search_and_open(page, ref_food):
                 continue
 
             # -----------------------------
-            # CLEAN VALUES
+            # CLEAN HELPER
             # -----------------------------
             def clean(val):
-                return "" if pd.isna(val) else str(val).strip()
+                if pd.isna(val):
+                    return ""
+                val = str(val).strip()
+                return "" if val.lower() == "nan" else val
 
             price = clean(row["price"])
             category = clean(row["category"])
             kitchen = clean(row["kitchen"])
             sessions = clean(row["sessions"])
-            extra_notes_raw = clean(row["extra notes"])
+            extra_notes_raw = clean(row["extra_notes"])
             image_name = clean(row.get("img", ""))
 
-            max_limit = row.get("max extra notes limit")
+            food_tamil = clean(row.get("tamil", ""))
+            max_limit = row.get("max_extra_notes_limit")
             max_limit = max_extra_notes if pd.isna(max_limit) else int(max_limit)
 
             # -----------------------------
-            # CURRENT DATA (TEXT ONLY)
+            # CURRENT DATA
             # -----------------------------
             current = get_current_item_data(page)
 
             def same(field, excel_val):
                 return excel_val and str(current.get(field)) == excel_val
+
+            # -----------------------------
+            # FOOD NAME (NEW)
+            # -----------------------------
+            if new_food and not same("food", new_food):
+                page.fill("input[name='foodname']", new_food)
+
+            # -----------------------------
+            # FOOD TAMIL NAME
+            # -----------------------------
+            if food_tamil and not same("tamil", food_tamil):
+                page.fill("input[name='foodnametn']", food_tamil)
 
             # -----------------------------
             # CATEGORY
@@ -290,7 +137,7 @@ def edit_items_from_excel(file_path, max_extra_notes=3):
                 page.fill("input[name='foodprice']", price)
 
             # -----------------------------
-            # FOOD SESSIONS
+            # SESSIONS
             # -----------------------------
             if sessions:
                 for s in sessions.split(","):
@@ -309,54 +156,54 @@ def edit_items_from_excel(file_path, max_extra_notes=3):
                 page.keyboard.press("Escape")
 
             # -----------------------------
-            # EXTRA NOTES
+            # EXTRA NOTES (SAME AS SESSIONS)
             # -----------------------------
+            if pd.isna(extra_notes_raw):
+                extra_notes_raw = ""
+            else:
+                extra_notes_raw = str(extra_notes_raw).strip()
+            
             if extra_notes_raw:
+                # Set max limit
                 page.fill("input[name='extra_notes_limit']", str(max_limit))
-
+            
                 notes = [
                     n.strip()
                     for n in extra_notes_raw.split(",")
                     if n.strip().lower() != "nan"
                 ][:max_limit]
-
+            
                 for note in notes:
-                    page.click("#extra_notes + span.select2")
-                    search = page.locator(".select2-container--open input.select2-search__field")
+                    note = note.strip()
+                    if not note:
+                        continue
+            
+                    # Open Extra Notes Select2
+                    page.click("select#extra_notes + span.select2")
+            
+                    # Scope search to THIS open Select2 only
+                    search = page.locator(
+                        ".select2-container--open .select2-search__field"
+                    )
+            
                     search.fill(note)
-
-                    page.wait_for_selector(".select2-results__option", timeout=5000)
-                    page.locator(".select2-results__option", has_text=note).first.click()
+            
+                    # Wait for dropdown results
+                    page.wait_for_selector(
+                        ".select2-results__option",
+                        timeout=5000
+                    )
+            
+                    # Click matching option
+                    page.locator(
+                        ".select2-results__option",
+                        has_text=note
+                    ).first.click()
+            
                     time.sleep(0.2)
-
-                page.keyboard.press("Escape")
-
-            # -----------------------------
-            # IMAGE UPLOAD (EDIT MODE – FORCE)
-            # -----------------------------
-            if image_name and image_name.lower() != "nan":
-                foods = r"C:\Users\User\Videos\foodimages\Foods"
-                beverages = r"C:\Users\User\Videos\foodimages\Beverages"
-
-                img_path = os.path.join(foods, image_name)
-                if not os.path.exists(img_path):
-                    img_path = os.path.join(beverages, image_name)
-
-                if os.path.exists(img_path):
-                    print(f"🖼 Updating image: {image_name}")
-
-                    file_input = page.locator("input[name='picture']")
-                    file_input.set_input_files(img_path)
-
-                    # 🔥 trigger onchange (VERY IMPORTANT)
-                    page.evaluate("""
-                        const input = document.querySelector("input[name='picture']");
-                        input.dispatchEvent(new Event('change', { bubbles: true }));
-                    """)
-
-                    time.sleep(1.5)
-                else:
-                    print(f"⚠️ Image not found: {image_name}")
+            
+                # Close dropdown
+                page.keyboard.press("Escape")           
 
             # -----------------------------
             # STATUS
@@ -373,3 +220,4 @@ def edit_items_from_excel(file_path, max_extra_notes=3):
         print("\n🎉 All items processed")
         input("Press Enter to close...")
         browser.close()
+

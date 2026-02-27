@@ -1,161 +1,168 @@
-# # Pages/delete_page/delete_all_items_page.py
-
-# from tkinter import messagebox
-# import threading
-# from Functions.Delete.delete_all import delete_all_items
-# from playwright.sync_api import sync_playwright
-# from main import restaurant, login
-# import time
-
-
-# def open_delete_all_items(status_label):
-#     confirm = messagebox.askyesno(
-#         "⚠ DELETE ALL ITEMS",
-#         "This will permanently delete ALL food items.\n\nAre you sure?"
-#     )
-
-#     if not confirm:
-#         status_label.config(text="Delete cancelled", fg="gray")
-#         return
-
-#     status_label.config(text="🗑 Deleting all items...", fg="red")
-
-#     def run_delete():
-#         try:
-#             delete_all_items()
-#             status_label.config(text="✅ All items deleted successfully", fg="green")
-#         except Exception as e:
-#             status_label.config(text=f"❌ Error: {e}", fg="red")
-
-#     threading.Thread(
-#         target=run_delete,
-#         daemon=True
-#     ).start()
-
+import tkinter as tk
 from tkinter import messagebox
 import threading
-import time
-from playwright.sync_api import sync_playwright
-from main import login
 
-
-from Functions.Delete.delete_all import delete_all_items
-from Functions.Delete.delete_all import delete_all_assigned_addons
-
-
-def open_delete_all_items(status_label):
-    confirm = messagebox.askyesno(
-        "⚠ DELETE ALL ITEMS",
-        "This will permanently delete ALL food items.\n\nAre you sure?"
-    )
-
-    if not confirm:
-        status_label.config(text="Delete cancelled", fg="gray")
-        return
-
-    status_label.config(text="🗑 Deleting all items...", fg="red")
-
-    def run_delete():
-        try:
-            delete_all_items()
-            status_label.config(text="✅ All items deleted successfully", fg="green")
-        except Exception as e:
-            status_label.config(text=f"❌ Error: {e}", fg="red")
-
-    threading.Thread(target=run_delete, daemon=True).start()
-
+from Functions.Delete.delete_items import delete_all_items
+from Functions.Delete.delete_all_addons import delete_all_assigned_addons  
+from Functions.Delete.delete_all_tables import delete_all_tables
+from Functions.Delete.delete_all_orders import delete_all_orders
 
 # ==================================================
-# 🔥 NEW FUNCTION: DELETE ALL ASSIGNED ADD-ONS
+# 🗑 DELETE DASHBOARD UI
 # ==================================================
-def open_delete_all_assigned_addons(status_label):
-    confirm = messagebox.askyesno(
-        "⚠ DELETE ASSIGNED ADD-ONS",
-        "This will delete ALL assigned add-ons.\n\nAre you sure?"
+def open_delete_dashboard():
+    root = tk.Toplevel()
+    root.title("Danger Zone")
+    root.state("zoomed")   # Full screen
+    root.configure(bg="#0f172a")  # Dark blue-gray
+
+    # ---------------- TITLE ----------------
+    title = tk.Label(
+        root,
+        text="⚠ DANGER ZONE",
+        font=("Segoe UI", 28, "bold"),
+        bg="#0f172a",
+        fg="#f87171"
     )
+    title.pack(pady=(40, 10))
 
-    if not confirm:
-        status_label.config(text="Delete cancelled", fg="gray")
-        return
+    subtitle = tk.Label(
+        root,
+        text="Permanent deletion actions — proceed carefully",
+        font=("Segoe UI", 14),
+        bg="#0f172a",
+        fg="#94a3b8"
+    )
+    subtitle.pack(pady=(0, 30))
 
-    status_label.config(text="🗑 Deleting assigned add-ons...", fg="red")
+    # ---------------- STATUS LABEL ----------------
+    status_label = tk.Label(
+        root,
+        text="Ready",
+        font=("Segoe UI", 12),
+        bg="#020617",
+        fg="#22c55e",
+        padx=20,
+        pady=10
+    )
+    status_label.pack(pady=10)
 
-    def run_delete():
-        try:
-            delete_all_assigned_addons()
-            status_label.config(
-                text="✅ All assigned add-ons deleted",
-                fg="green"
-            )
-        except Exception as e:
-            status_label.config(text=f"❌ Error: {e}", fg="red")
+    # ---------------- BUTTON FRAME ----------------
+    container = tk.Frame(root, bg="#0f172a")
+    container.pack(expand=True)
 
-    threading.Thread(target=run_delete, daemon=True).start()
-
-def delete_all_orders(status_label):
-    URL = "https://eltacoexpress2.foodiee.com.my/ordermanage/order/orderlist"
-
-    status_label.config(text="🗑 Deleting all orders...", fg="red")
-
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False, slow_mo=100)
-        context = browser.new_context()
-        page = context.new_page()
-
-        # -----------------------------
-        # LOGIN
-        # -----------------------------
-        login(
-            page,
-            email="admin@gmail.com",
-            password="FooDiee#25!"
+    # Common button style
+    def danger_button(parent, text, command):
+        return tk.Button(
+            parent,
+            text=text,
+            command=command,
+            font=("Segoe UI", 14, "bold"),
+            bg="#dc2626",
+            fg="white",
+            activebackground="#991b1b",
+            activeforeground="white",
+            bd=0,
+            width=28,
+            height=2,
+            cursor="hand2"
         )
 
-        # -----------------------------
-        # OPEN ORDER LIST
-        # -----------------------------
-        page.goto(URL, timeout=60000)
-        page.wait_for_timeout(2000)
+    # ---------------- BUTTON ACTIONS (PLACEHOLDERS) ----------------
+    def delete_items():
+        confirm = messagebox.askyesno(
+            "⚠ DELETE ALL ITEMS",
+            "This will permanently delete ALL items.\n\nAre you sure?"
+        )
+        if not confirm:
+            return
+    
+        status_label.config(text="🗑 Deleting all items...", fg="#f87171")
+    
+        def run():
+            try:
+                delete_all_items()
+                status_label.config(text="✅ All items deleted", fg="#4ade80")
+            except Exception as e:
+                status_label.config(text=f"❌ Error: {e}", fg="#f87171")
+    
+        threading.Thread(target=run, daemon=True).start()
+    
 
-        # -----------------------------
-        # AUTO-ACCEPT ALERT
-        # -----------------------------
-        page.on("dialog", lambda dialog: dialog.accept())
+    def delete_addons():
+        confirm = messagebox.askyesno(
+            "⚠ DELETE ALL ADD-ONS",
+            "This will permanently delete ALL add-ons.\n\nAre you sure?"
+        )
+        if not confirm:
+            return
+    
+        status_label.config(text="🗑 Deleting all add-ons...", fg="#f87171")
+    
+        def run():
+            try:
+                delete_all_assigned_addons(status_label)
+                status_label.config(text="✅ All add-ons deleted", fg="#4ade80")
+            except Exception as e:
+                status_label.config(text=f"❌ Error: {e}", fg="#f87171")
+    
+        threading.Thread(target=run, daemon=True).start()
+    
+    def delete_tables():
+        confirm = messagebox.askyesno(
+            "⚠ DELETE ALL TABLES",
+            "This will permanently delete ALL tables.\n\nAre you sure?"
+        )
+        if not confirm:
+            return
+    
+        status_label.config(text="🗑 Deleting all tables...", fg="#f87171")
+    
+        def run():
+            try:
+                delete_all_tables()
+                status_label.config(text="✅ All tables deleted", fg="#4ade80")
+            except Exception as e:
+                status_label.config(text=f"❌ Error: {e}", fg="#f87171")
+    
+        threading.Thread(target=run, daemon=True).start()
 
-        # -----------------------------
-        # DELETE LOOP
-        # -----------------------------
-        while True:
-            rows = page.locator("td.sorting_1")
+    def delete_orders():
+        confirm = messagebox.askyesno(
+            "⚠ DELETE ALL ORDERS",
+            "This will permanently delete ALL orders.\n\nAre you sure?"
+        )
+        if not confirm:
+            return
+    
+        status_label.config(text="🗑 Deleting all orders...", fg="#f87171")
+    
+        def run():
+            try:
+                delete_all_orders(status_label)
+                status_label.config(text="✅ All orders deleted", fg="#4ade80")
+            except Exception as e:
+                status_label.config(text=f"❌ Error: {e}", fg="#f87171")
+    
+        threading.Thread(target=run, daemon=True).start()
+    
+    # ---------------- BUTTON GRID ----------------
+    btn1 = danger_button(container, "🗑 DELETE ALL ITEMS", delete_items)
+    btn2 = danger_button(container, "🗑 DELETE ALL ADD-ONS", delete_addons)
+    btn3 = danger_button(container, "🗑 DELETE ALL TABLES", delete_tables)
+    btn4 = danger_button(container, "🗑 DELETE ALL ORDERS", delete_orders)
 
-            if rows.count() == 0:
-                status_label.config(
-                    text="✅ All orders deleted",
-                    fg="green"
-                )
-                break
+    btn1.grid(row=0, column=0, padx=20, pady=15)
+    btn2.grid(row=1, column=0, padx=20, pady=15)
+    btn3.grid(row=2, column=0, padx=20, pady=15)
+    btn4.grid(row=3, column=0, padx=20, pady=15)
 
-            # 1️⃣ CLICK FIRST ROW NUMBER (EXPAND)
-            rows.first.click()
-            page.wait_for_timeout(800)
-
-            # 2️⃣ FIND DELETE BUTTON INSIDE CHILD ROW
-            delete_btn = page.locator(
-                "td.child a.btn-danger i.fa-trash"
-            ).first
-
-            if delete_btn.count() == 0:
-                # If no delete found, reload and retry
-                page.reload()
-                page.wait_for_timeout(1500)
-                continue
-
-            # 3️⃣ CLICK DELETE
-            delete_btn.click()
-            time.sleep(1)
-
-            # 4️⃣ RELOAD AFTER DELETE
-            page.reload()
-            page.wait_for_timeout(1500)
-
-        browser.close()
+    # ---------------- FOOTER ----------------
+    footer = tk.Label(
+        root,
+        text="These actions cannot be undone",
+        font=("Segoe UI", 10),
+        bg="#0f172a",
+        fg="#64748b"
+    )
+    footer.pack(pady=20)

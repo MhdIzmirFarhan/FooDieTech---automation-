@@ -14,7 +14,7 @@ def create_kitchens_from_excel(file_path):
     if file_path.endswith(".csv"):
         df = pd.read_csv(file_path)
     else:
-        df = pd.read_excel(file_path, sheet_name="kitchen")
+        df = pd.read_excel(file_path, sheet_name="Kitchen")
 
     required_cols = {"kitchenname", "ip_address", "port"}
 

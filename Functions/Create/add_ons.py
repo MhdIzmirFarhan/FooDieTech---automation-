@@ -66,7 +66,7 @@ def add_addons(file_path):
     # -----------------------------
     # READ 'add_on' SHEET
     # -----------------------------
-    df = pd.read_excel(file_path, sheet_name="add_on")
+    df = pd.read_excel(file_path, sheet_name="Add-ons")
 
     # -----------------------------
     # PLAYWRIGHT
@@ -97,9 +97,9 @@ def add_addons(file_path):
         # LOOP ADD-ONS
         # -----------------------------
         for _, row in df.iterrows():
-            name = str(row.get("Add-ons Name", "")).strip()
-            price = str(row.get("Price", "0")).strip()
-            status = str(row.get("Status", "1")).strip()  # Default Active
+            name = str(row.get("add_ons_name", "")).strip()
+            price = str(row.get("price", "0")).strip()
+            status = str(row.get("status", "1")).strip()  # Default Active
 
             if not name:
                 print("⚠️ Skipping empty add-on name")

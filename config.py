@@ -3,10 +3,15 @@
 restaurant_list = [
     "ranaacurryhouse",
     "chelveiscurryhouse",
-    "pelitanasi",
-    "foodieedemo",
+    "thegangacafe",
+    "amuthasfishheadcurry",
     "eltacoexpress1",
     "eltacoexpress2",
+    "srivasanthavilash",
+    "sriannamalaiunavagam",
+    "canaicorner",
+    "unclemisai",
+    "devfrequency",
 ]
 
 # Default selected restaurant (ONE TIME)

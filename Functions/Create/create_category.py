@@ -14,7 +14,7 @@ def create_categories_from_excel(file_path):
     if file_path.endswith(".csv"):
         df = pd.read_csv(file_path)
     else:
-        df = pd.read_excel(file_path, sheet_name="category")
+        df = pd.read_excel(file_path, sheet_name="Category")
 
 
     required_cols = {"category_name"}

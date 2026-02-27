@@ -4,6 +4,7 @@ from Functions.Create.add_session import create_sessions_from_excel
 from Functions.Create.create_category import create_categories_from_excel
 from Functions.Create.extra_notes import create_extra_notes_from_excel
 from Functions.Create.create_kitchen import create_kitchens_from_excel
+from Functions.Create.create_tables import create_tables_from_excel
 
 import tkinter as tk
 from tkinter import filedialog
@@ -14,28 +15,27 @@ def open_food_item_page(selected_file_path, status_label):
     # ---------------- WINDOW ----------------
     food_win = tk.Toplevel()
     food_win.title("Create New Food Item")
-    food_win.geometry("520x520")
-    food_win.resizable(True, True)
+    food_win.state('zoomed')  # Fullscreen
 
     # ---------------- LOCAL STATE ----------------
     file_path_var = tk.StringVar(value=selected_file_path)
 
-    # ---------------- UI ----------------
+    # ---------------- HEADER ----------------
     tk.Label(
         food_win,
         text="Upload Excel / CSV File",
-        font=("Segoe UI", 12, "bold")
+        font=("Segoe UI", 14, "bold")
     ).pack(pady=(10, 5))
 
     file_label = tk.Label(
         food_win,
         text=file_path_var.get() or "No file selected",
-        wraplength=480,
+        wraplength=500,
         fg="gray"
     )
     file_label.pack(pady=5)
 
-    page_status = tk.Label(food_win, text="", fg="blue")
+    page_status = tk.Label(food_win, text="", fg="blue", font=("Segoe UI", 10))
     page_status.pack(pady=5)
 
     # ---------------- FILE PICKER ----------------
@@ -55,7 +55,9 @@ def open_food_item_page(selected_file_path, status_label):
     tk.Button(
         food_win,
         text="📂 Upload File",
-        width=20,
+        width=25,
+        height=2,
+        font=("Segoe UI", 12),
         command=choose_file
     ).pack(pady=8)
 
@@ -83,15 +85,15 @@ def open_food_item_page(selected_file_path, status_label):
     tk.Button(
         food_win,
         text="▶ Run Food Items Only",
-        width=20,
+        width=35,
+        height=2,
         bg="#2ecc71",
         fg="white",
+        font=("Segoe UI", 12, "bold"),
         command=start_food_bot
     ).pack(pady=10)
 
-    # ==================================================
-    # 🔹 RUN ALL AUTOMATION BUTTON (NEW)
-    # ==================================================
+    # ---------------- RUN ALL AUTOMATION ----------------
     def run_all():
         file_path = file_path_var.get()
         if not file_path:
@@ -115,7 +117,6 @@ def open_food_item_page(selected_file_path, status_label):
                     fg="green"
                 )
                 status_label.config(text="All done 🎉", fg="green")
-
             except Exception as e:
                 page_status.config(text=f"❌ Error: {e}", fg="red")
                 status_label.config(text="Error occurred", fg="red")
@@ -125,20 +126,20 @@ def open_food_item_page(selected_file_path, status_label):
     tk.Button(
         food_win,
         text="🚀 Run ALL (Category + Add-ons + Session + Notes + Kitchen + Food)",
-        width=52,
+        width=50,
+        height=2,
         bg="#e67e22",
         fg="white",
+        font=("Segoe UI", 12, "bold"),
         command=run_all
     ).pack(pady=15)
 
-    # ==================================================
-    # 🔹 QUICK CREATE SECTION (Individual)
-    # ==================================================
+    # ---------------- QUICK CREATE SECTION ----------------
     tk.Label(
         food_win,
         text="Quick Create (Individual)",
-        font=("Segoe UI", 11, "bold")
-    ).pack(pady=(10, 5))
+        font=("Segoe UI", 13, "bold")
+    ).pack(pady=(15, 5))
 
     quick_frame = tk.Frame(food_win)
     quick_frame.pack(pady=5)
@@ -152,37 +153,59 @@ def open_food_item_page(selected_file_path, status_label):
         status_label.config(text=label_text, fg="green")
         threading.Thread(target=lambda: fn(file_path), daemon=True).start()
 
+    # Row 0
     tk.Button(
         quick_frame,
         text="📂 Category",
-        width=14,
+        width=18,
+        height=2,
+        font=("Segoe UI", 12),
         command=lambda: run_simple(create_categories_from_excel, "Creating Categories")
     ).grid(row=0, column=0, padx=5, pady=5)
 
     tk.Button(
         quick_frame,
         text="➕ Add-on",
-        width=14,
+        width=18,
+        height=2,
+        font=("Segoe UI", 12),
         command=lambda: run_simple(add_addons, "Creating Add-ons")
     ).grid(row=0, column=1, padx=5, pady=5)
 
+    # Row 1
     tk.Button(
         quick_frame,
         text="🕒 Session",
-        width=14,
+        width=18,
+        height=2,
+        font=("Segoe UI", 12),
         command=lambda: run_simple(create_sessions_from_excel, "Creating Sessions")
     ).grid(row=1, column=0, padx=5, pady=5)
 
     tk.Button(
         quick_frame,
         text="📝 Extra Notes",
-        width=14,
+        width=18,
+        height=2,
+        font=("Segoe UI", 12),
         command=lambda: run_simple(create_extra_notes_from_excel, "Creating Extra Notes")
     ).grid(row=1, column=1, padx=5, pady=5)
 
+    # Row 2
     tk.Button(
         quick_frame,
         text="🍳 Kitchen",
-        width=14,
+        width=38,
+        height=2,
+        font=("Segoe UI", 12),
         command=lambda: run_simple(create_kitchens_from_excel, "Creating Kitchen")
-    ).grid(row=2, column=0, columnspan=2, pady=5)
+    ).grid(row=2, column=0, columnspan=2, pady=5, padx=5)
+
+    tk.Button(
+        quick_frame,
+        text="⛩ Create Table Numbers",
+        width=38,
+        height=2,
+        font=("Segoe UI", 12),
+        command=lambda: run_simple(create_tables_from_excel, "Creating Table Numbers")
+    ).grid(row=2, column=0, columnspan=3, pady=5, padx=5)

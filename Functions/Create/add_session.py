@@ -14,7 +14,7 @@ def create_sessions_from_excel(file_path):
         df = pd.read_csv(file_path)
     else:
         # Read specifically from sheet named "session"
-        df = pd.read_excel(file_path, sheet_name="session")
+        df = pd.read_excel(file_path, sheet_name="Sessions")
 
     required_cols = {
         "session_name",

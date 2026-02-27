@@ -19,7 +19,7 @@ def create_items(file_path, max_extra_notes=3):
 
     required_cols = {
         "food", "price", "category", "kitchen",
-        "sessions", "extra notes", "max extra notes limit"
+        "sessions", "extra_notes", "max_extra_notes_limit"
     }
 
     if not required_cols.issubset(df.columns):
@@ -51,9 +51,11 @@ def create_items(file_path, max_extra_notes=3):
             sessions = str(row["sessions"]).strip()
             add_ons = str(row.get("add_ons", "")).strip()
             image_name = str(row.get("img", "")).strip()
+            food_tamil = str(row.get("tamil", "")).strip()
+            food_variant = str(row.get("food_variant", "")).strip()
+            extra_notes_raw = row.get("extra_notes", "")
+            max_limit = row.get("max_extra_notes_limit", max_extra_notes)
 
-            extra_notes_raw = str(row.get("extra notes", "")).strip()
-            max_limit = row.get("max extra notes limit", max_extra_notes)
 
             if pd.isna(max_limit) or str(max_limit).strip() == "":
                 max_limit = max_extra_notes
@@ -77,6 +79,18 @@ def create_items(file_path, max_extra_notes=3):
             # Name & Price
             page.fill("input[name='foodname']", food)
             page.fill("input[name='foodprice']", price)
+            page.fill("input[name='foodname']", food)
+            page.fill("input[name='foodprice']", price)
+
+            if food_tamil and food_tamil.lower() != "nan":
+                print(f"📝 Tamil name detected: {food_tamil}")
+                page.fill("input[name='foodnametn']", food_tamil)
+            
+            
+            if food_variant and food_variant.lower() != "nan":
+                page.fill("input[name='foodvarient']", food_variant)
+            
+
 
             # -----------------------------
             # IMAGE UPLOAD
@@ -96,6 +110,56 @@ def create_items(file_path, max_extra_notes=3):
                     print(f"⚠️ Image not found: {image_name}")
 
             # -----------------------------
+            # EXTRA NOTES (SAME AS SESSIONS)
+            # -----------------------------
+            if pd.isna(extra_notes_raw):
+                extra_notes_raw = ""
+            else:
+                extra_notes_raw = str(extra_notes_raw).strip()
+            
+            if extra_notes_raw:
+                # Set max limit
+                page.fill("input[name='extra_notes_limit']", str(max_limit))
+            
+                notes = [
+                    n.strip()
+                    for n in extra_notes_raw.split(",")
+                    if n.strip().lower() != "nan"
+                ][:max_limit]
+            
+                for note in notes:
+                    note = note.strip()
+                    if not note:
+                        continue
+            
+                    # Open Extra Notes Select2
+                    page.click("select#extra_notes + span.select2")
+            
+                    # Scope search to THIS open Select2 only
+                    search = page.locator(
+                        ".select2-container--open .select2-search__field"
+                    )
+            
+                    search.fill(note)
+            
+                    # Wait for dropdown results
+                    page.wait_for_selector(
+                        ".select2-results__option",
+                        timeout=5000
+                    )
+            
+                    # Click matching option
+                    page.locator(
+                        ".select2-results__option",
+                        has_text=note
+                    ).first.click()
+            
+                    time.sleep(0.2)
+            
+                # Close dropdown
+                page.keyboard.press("Escape")
+
+            # -----------------------------
             # FOOD SESSIONS
             # -----------------------------
             for s in sessions.split(","):
@@ -113,44 +177,6 @@ def create_items(file_path, max_extra_notes=3):
             page.keyboard.press("Escape")
 
             # -----------------------------
-            # CLEAN EXCEL VALUE
-            # -----------------------------
-            if pd.isna(extra_notes_raw):
-                extra_notes_raw = ""
-            else:
-                extra_notes_raw = str(extra_notes_raw).strip()
-            
-            if extra_notes_raw:
-                page.fill("input[name='extra_notes_limit']", str(max_limit))
-            
-                notes = [
-                    n.strip()
-                    for n in extra_notes_raw.split(",")
-                    if n.strip().lower() != "nan"
-                ][:max_limit]
-            
-                for note in notes:
-                    page.click("#extra_notes + span.select2")
-            
-                    search = page.locator(
-                        ".select2-container--open input.select2-search__field"
-                    )
-                    search.wait_for(state="visible", timeout=5000)
-            
-                    search.fill(note)
-            
-                    page.wait_for_selector(".select2-results__option", timeout=5000)
-                    page.locator(
-                        ".select2-results__option",
-                        has_text=note
-                    ).first.click()
-            
-                    time.sleep(0.2)
-            
-                page.keyboard.press("Escape")
-            
-
-            # -----------------------------
             # STATUS
             # -----------------------------
             page.select_option("select[name='status']", "1")
@@ -161,47 +187,61 @@ def create_items(file_path, max_extra_notes=3):
             time.sleep(2)
 
             # -----------------------------
-            # ADD-ONS (OPTIONAL → SKIP IF EMPTY)
+            # ADD-ONS (ONE BY ONE, skip empty/NaN)
             # -----------------------------
-            if not add_ons or str(add_ons).strip().lower() in ("", "nan"):
+            if pd.isna(add_ons) or str(add_ons).strip() in ("", "nan"):
                 print(f"⏭️ No add-ons for: {food} → skipping")
-                continue  # move to NEXT ITEM immediately
+            else:
+                # Clean & split add-ons
+                addon_list = [
+                    addon.strip()
+                    for addon in str(add_ons).split(",")
+                    if addon.strip() and addon.strip().lower() != "nan"
+                ]
             
-            addon_list = [a.strip() for a in add_ons.split(",") if a.strip()]
+                if not addon_list:
+                    print(f"⏭️ Add-ons empty after cleaning for: {food}")
+                else:
+                    for addon in addon_list:
+                        print(f"➕ Assigning add-on: {addon} → {food}")
             
-            if not addon_list:
-                print(f"⏭️ Add-ons empty after parsing for: {food}")
-                continue
+                        page.goto(ASSIGN_URL, timeout=60000)
             
-            # Only reach here IF add-ons exist
-            page.goto(ASSIGN_URL, timeout=60000)
-            page.click("button[data-target='#add0']")
-            page.wait_for_selector("select[name='addonsid']", timeout=60000)
+                        # Open modal
+                        page.click("button[data-target='#add0']")
+                        page.wait_for_selector("select[name='addonsid']", timeout=60000)
             
-            # Select add-ons
-            page.click("select[name='addonsid'] + span.select2")
-            for addon in addon_list:
-                search = page.locator(".select2-container--open .select2-search__field")
-                search.fill(addon)
-                time.sleep(0.3)
-                page.locator(
-                    ".select2-results__option",
-                    has_text=addon
-                ).first.click()
+                        # Select ONE add-on
+                        page.click("select[name='addonsid'] + span.select2")
+                        search = page.locator(
+                            ".select2-container--open .select2-search__field"
+                        )
+                        search.fill(addon)
+                        page.wait_for_selector(".select2-results__option", timeout=5000)
+                        page.locator(
+                            ".select2-results__option",
+                            has_text=addon
+                        ).first.click()
             
-            # Select food
-            page.click("select[name='menuid'] + span.select2")
-            search = page.locator(".select2-container--open .select2-search__field")
-            search.fill(food)
-            time.sleep(0.5)
-            page.locator(
-                ".select2-results__option",
-                has_text=food
-            ).first.click()
+                        # Select food
+                        page.click("select[name='menuid'] + span.select2")
+                        search = page.locator(
+                            ".select2-container--open .select2-search__field"
+                        )
+                        search.fill(food)
+                        page.wait_for_selector(".select2-results__option", timeout=5000)
+                        page.locator(
+                            ".select2-results__option",
+                            has_text=food
+                        ).first.click()
             
-            page.click("button[type='submit']")
-            print(f"➕ Add-ons assigned: {food}")
-            time.sleep(2)
+                        # Save
+                        page.click("button[type='submit']")
+                        print(f"✅ Add-on saved: {addon} → {food}")
+            
+                        time.sleep(2)
+            
+            
             
 
         browser.close()
